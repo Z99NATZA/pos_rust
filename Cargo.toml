@@ -1,0 +1,21 @@
+[package]
+name = "pos_rust"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+axum = "0.8.4"
+tokio = { version = "1", features = ["full"] }
+thiserror = "2.0.16"
+dotenvy = "0.15.7"
+serde_json = "1"
+tracing = "0.1.41"
+
+[dependencies.sqlx]
+version = "0.8.6"
+features = [
+    "runtime-tokio",
+    "tls-rustls",
+    "postgres",
+    "macros",
+]
