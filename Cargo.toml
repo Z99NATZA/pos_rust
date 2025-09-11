@@ -9,6 +9,7 @@ tokio = { version = "1", features = ["full"] }
 thiserror = "2.0.16"
 dotenvy = "0.15.7"
 serde_json = "1"
+serde = "1"
 tracing = "0.1.41"
 
 [dependencies.sqlx]
