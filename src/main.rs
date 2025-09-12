@@ -5,6 +5,7 @@ mod server;
 mod routers;
 mod controllers;
 mod dto;
+mod config;
 
 #[tokio::main]
 async fn main() -> AppResult<()> {

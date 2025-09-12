@@ -2,7 +2,7 @@ use std::{env, sync::Arc};
 
 use tokio::signal;
 
-use crate::{app::{result::AppResult, state::AppState}, routers};
+use crate::{app::{result::AppResult, state::AppState}, config::db::connect, routers};
 
 pub async fn run() -> AppResult<()> {
     if cfg!(debug_assertions) {
@@ -10,7 +10,7 @@ pub async fn run() -> AppResult<()> {
     }
 
     let db_url = env::var("DATABASE_URL")?;
-    let db = AppState::connect(&db_url).await?;
+    let db = connect(&db_url).await?;
 
     let state = Arc::new(AppState {
         db
