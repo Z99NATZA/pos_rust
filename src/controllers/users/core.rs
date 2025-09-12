@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
-use axum::{Json, extract::State};
+use axum::{Json, extract::State, http::StatusCode, response::{IntoResponse, Response}};
 
-use crate::{app::{result::AppResult, state::AppState}, dto::users::{CreateUser, ListUsers}};
+use crate::{app::{result::AppResult, state::AppState}, dto::users::{BaseApiResponse, CreateUser, ListUsers}};
 
 pub async fn list_users(
     State(state): State<Arc<AppState>>
@@ -23,20 +23,26 @@ pub async fn list_users(
 pub async fn create_user (
     State(state): State<Arc<AppState>>,
     Json(payload): Json<CreateUser>
-) -> AppResult<()> {
+) -> AppResult<Response> {
     let _ = sqlx::query(r#"
             INSERT INTO users(username, password_hash, email, role, is_active)
             values($1, $2, $3, $4, $5)
         "#)
-        .bind(payload.username)
-        .bind(payload.password)
-        .bind(payload.role)
+        .bind(&payload.username)
+        .bind(&payload.password)
+        .bind(&payload.email)
+        .bind(&payload.role)
         .bind(payload.is_active)
         .execute(&state.db)
         .await?
         ;
 
-    println!("Created");
+    let res = BaseApiResponse {
+        success: true,
+        message: Some("Created".into())
+    };
 
-    Ok(())
+    println!("{res:?}");
+
+    Ok((StatusCode::CREATED, Json(res)).into_response())
 }

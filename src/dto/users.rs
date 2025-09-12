@@ -16,3 +16,9 @@ pub struct CreateUser {
     pub role: Option<String>,
     pub is_active: Option<bool>
 }
+
+#[derive(Debug, Serialize)]
+pub struct BaseApiResponse {
+    pub success: bool,
+    pub message: Option<String>,
+}
