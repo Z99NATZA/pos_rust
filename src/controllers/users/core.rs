@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use axum::{Json, extract::State, http::StatusCode, response::{IntoResponse, Response}};
 
-use crate::{app::{result::AppResult, state::AppState}, dto::users::{BaseApiResponse, CreateUser, ListUsers}};
+use crate::{app::{result::AppResult, state::AppState}, dto::{base::BaseApiResponse, users::{CreateUser, ListUsers}}};
 
 pub async fn list_users(
     State(state): State<Arc<AppState>>
