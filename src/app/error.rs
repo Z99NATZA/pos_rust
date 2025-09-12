@@ -27,13 +27,44 @@ pub enum AppError {
 impl IntoResponse for AppError {
     fn into_response(self) -> axum::response::Response {
         let (status, code, message): (StatusCode, &str, String) = match &self {
-            AppError::InternalServerError(e) => (StatusCode::INTERNAL_SERVER_ERROR, "internal_server_error", e.to_string()),
+            AppError::InternalServerError(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "internal_server_error",
+                "Internal server error".into(),
+            ),
+
+            AppError::SqlxError(e) => {
+                match e {
+                    sqlx::Error::RowNotFound => (
+                        StatusCode::NOT_FOUND,
+                        "not_found",
+                        "Not found".to_string(),
+                    ),
+                    sqlx::Error::Database(db_err) => {
+                        let pg_code = db_err.code().map(|c| c.to_string());
+
+                        if pg_code.as_deref() == Some("23505") {
+                            (StatusCode::CONFLICT, "unique_violation", "Resource already exists".into())
+                        }
+                        else {
+                            (StatusCode::INTERNAL_SERVER_ERROR, "database_error", "Internal server error".into())
+                        }
+                    }
+                    _ => (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        "database_error",
+                        "Internal server error".into(),
+                    )
+                }
+            }
             
             AppError::IoError(_)
             | AppError::DotEnvError(_)
-            | AppError::EnvVarError(_)
-            | AppError::SqlxError(_)
-                => (StatusCode::INTERNAL_SERVER_ERROR, "internal_server_error", "Internal server error".into())
+            | AppError::EnvVarError(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "internal_server_error",
+                "Internal server error".into(),
+            ),
         };
 
         if status.is_server_error() {

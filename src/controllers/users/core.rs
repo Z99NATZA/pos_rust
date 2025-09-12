@@ -25,7 +25,7 @@ pub async fn create_user (
     Json(payload): Json<CreateUser>
 ) -> AppResult<()> {
     let _ = sqlx::query(r#"
-            INSERT INTO users(username, password, email, role, is_active)
+            INSERT INTO users(username, password_hash, email, role, is_active)
             values($1, $2, $3, $4, $5)
         "#)
         .bind(payload.username)
