@@ -5,6 +5,7 @@ use axum::{Json, http::StatusCode, response::IntoResponse};
 use thiserror::Error;
 use tracing::error;
 use serde_json::json;
+use validator::ValidationErrors;
 
 #[derive(Debug, Error)]
 pub enum AppError {
@@ -25,15 +26,18 @@ pub enum AppError {
 
     #[error("Argon2 error: {0}")]
     Argon2Error(#[from] argon2::password_hash::Error),
+
+    #[error("Validation Error: {0}")]
+    ValidationError(#[from] ValidationErrors),
 }
 
 impl IntoResponse for AppError {
     fn into_response(self) -> axum::response::Response {
-        let (status, code, message): (StatusCode, &str, String) = match &self {
-            AppError::InternalServerError(_) => (
+        let (status, code, message): (StatusCode, &'static str, String) = match &self {
+            AppError::InternalServerError(e) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "internal_server_error",
-                "Internal server error".into(),
+                e.clone(),
             ),
 
             AppError::SqlxError(e) => {
@@ -70,6 +74,32 @@ impl IntoResponse for AppError {
                 "internal_server_error",
                 "Internal server error".into(),
             ),
+
+            AppError::ValidationError(e) => {
+                /*
+                 * ตัดชื่อ field จริง ๆ ออก เอาเฉพาะ message
+                 * 
+                 * #[validate(length(min = 3, message = "username too short"))]
+                 * pub username: String,
+                 * 
+                 * เดิม "username: username too short"
+                 * เหลือ "username too short"
+                 */
+
+                let message = e
+                    .field_errors()
+                    .iter()
+                    .flat_map(|(_, errs)| errs.iter())
+                    .filter_map(|err| err.message.as_ref())
+                    .map(|msg| msg.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", "); // เผื่อหลาย field
+                (
+                    StatusCode::BAD_REQUEST,
+                    "validation_error",
+                    message,
+                )
+            }
         };
 
         if status.is_server_error() {

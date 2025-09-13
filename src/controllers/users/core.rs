@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use axum::{Json, extract::State, http::StatusCode, response::{IntoResponse, Response}};
+use validator::Validate;
 
 use crate::{app::{result::AppResult, state::AppState}, controllers::users::utils::password_hash, dto::{base::BaseApiResponse, users::{CreateUser, ListUsers}}};
 
@@ -24,6 +25,8 @@ pub async fn create_user (
     State(state): State<Arc<AppState>>,
     Json(payload): Json<CreateUser>
 ) -> AppResult<Response> {
+    payload.validate()?;
+
     let password_hash = password_hash(payload.password.clone())?;
 
     let _ = sqlx::query(r#"
