@@ -22,6 +22,9 @@ pub enum AppError {
 
     #[error("Sqlx error: {0}")]
     SqlxError(#[from] sqlx::Error),
+
+    #[error("Argon2 error: {0}")]
+    Argon2Error(#[from] argon2::password_hash::Error),
 }
 
 impl IntoResponse for AppError {
@@ -60,7 +63,9 @@ impl IntoResponse for AppError {
             
             AppError::IoError(_)
             | AppError::DotEnvError(_)
-            | AppError::EnvVarError(_) => (
+            | AppError::EnvVarError(_) 
+            | AppError::Argon2Error(_) 
+            => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "internal_server_error",
                 "Internal server error".into(),

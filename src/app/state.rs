@@ -1,6 +1,4 @@
-use sqlx::{PgPool, postgres::PgPoolOptions};
-
-use crate::app::result::AppResult;
+use sqlx::PgPool;
 
 #[derive(Clone)]
 pub struct AppState {
