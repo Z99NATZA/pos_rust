@@ -3,7 +3,7 @@ CREATE TABLE products (
     code CITEXT UNIQUE NOT NULL,
     name VARCHAR(50) NOT NULL,
     description TEXT DEFAULT '',
-    price DECIMAL(18, 2) NOT NULL DEFAULT 0.00,
+    price NUMERIC(18, 2) NOT NULL DEFAULT 0.00,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     image_name VARCHAR(100) NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),

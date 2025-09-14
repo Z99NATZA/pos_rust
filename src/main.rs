@@ -7,10 +7,11 @@ mod controllers;
 mod dto;
 mod config;
 mod bootstrap;
+mod utils;
 
 #[tokio::main]
 async fn main() -> AppResult<()> {
-    // เริ่มระบบ
+    // เริ่มระบบที่จำเป็น
     bootstrap::run();
 
     server::run().await?;

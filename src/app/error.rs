@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 use std::env;
-use axum::{Json, http::StatusCode, response::IntoResponse};
+use axum::{Json, extract::multipart::MultipartError, http::StatusCode, response::IntoResponse};
 use thiserror::Error;
 use tracing::error;
 use serde_json::json;
@@ -27,8 +27,17 @@ pub enum AppError {
     #[error("Argon2 error: {0}")]
     Argon2Error(#[from] argon2::password_hash::Error),
 
-    #[error("Validation Error: {0}")]
+    #[error("Validation error: {0}")]
     ValidationError(#[from] ValidationErrors),
+
+    #[error("Multipart error: {0}")]
+    MultipartError(#[from] MultipartError),
+
+    #[error("Rust decimal error: {0}")]
+    RustDecimalError(#[from] rust_decimal::Error),
+
+    #[error("Bad request")]
+    BadRequestCustom(String),
 }
 
 impl IntoResponse for AppError {
@@ -100,6 +109,22 @@ impl IntoResponse for AppError {
                     message,
                 )
             }
+
+            AppError::MultipartError(e) => (
+                StatusCode::BAD_REQUEST,
+                "invalid_multipart",
+                e.to_string(),
+            ),
+            AppError::RustDecimalError(e) => (
+                StatusCode::BAD_REQUEST,
+                "invalid_decimal",
+                e.to_string(),
+            ),
+            AppError::BadRequestCustom(e) => (
+                StatusCode::BAD_REQUEST,
+                "bad_request",
+                e.to_string(),
+            ),
         };
 
         if status.is_server_error() {
