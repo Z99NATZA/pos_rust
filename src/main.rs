@@ -13,11 +13,6 @@ async fn main() -> AppResult<()> {
     // เริ่มระบบ
     bootstrap::run();
 
-    // Dev log debug
-    tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::INFO)
-        .init();
-
     server::run().await?;
     Ok(())
 }
