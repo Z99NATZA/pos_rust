@@ -51,4 +51,3 @@ pub async fn create_user (
 
     Ok((StatusCode::CREATED, Json(res)).into_response())
 }
-

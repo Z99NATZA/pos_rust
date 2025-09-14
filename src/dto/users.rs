@@ -23,4 +23,3 @@ pub struct CreateUser {
     pub role: Option<String>,
     pub is_active: Option<bool>
 }
-
