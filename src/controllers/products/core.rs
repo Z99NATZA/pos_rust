@@ -1,10 +1,10 @@
-use std::{path::Path, sync::Arc};
+use std::sync::Arc;
 
-use axum::extract::{Multipart, State};
+use axum::{body::Bytes, extract::{Multipart, State}};
 use rust_decimal::Decimal;
 use uuid::Uuid;
 
-use crate::{app::{error::AppError, result::AppResult, state::AppState}, utils::numeric::string_to_decimal_2};
+use crate::{app::{error::AppError, result::AppResult, state::AppState}, utils::{file::{ensure_valid_ext, validate_image_ext}, numeric::string_to_decimal_2}};
 
 pub async fn create_product(
     State(_state): State<Arc<AppState>>,
@@ -16,6 +16,7 @@ pub async fn create_product(
     let mut description = String::new();
     let mut is_active = true;
     let mut image_name = String::new();
+    let mut data = Bytes::new();
 
     while let Some(field) = mp.next_field().await? {
         match field.name() {
@@ -35,18 +36,12 @@ pub async fn create_product(
                     .file_name()
                     .ok_or_else(|| AppError::BadRequestCustom("เพิ่มภาพสินค้า".into()))?;
 
-                let ext = Path::new(filename)
-                    .extension()
-                    .and_then(|e| e.to_str())
-                    .unwrap_or("bin");
+                let ext = ensure_valid_ext(filename)?;
+                let _ = validate_image_ext(ext.as_str())?;
 
                 image_name = format!("product-{}.{}", Uuid::new_v4(), ext);
 
-                let data = field.bytes().await?;
-                tokio::fs::write(
-                    format!("images/products/{}", image_name.clone()),
-                    &data
-                ).await?;
+                data = field.bytes().await?;
             },
             _ => {}
         }
@@ -69,6 +64,8 @@ pub async fn create_product(
             is_active,
             image_name
     );
+
+    tokio::fs::write(format!("images/products/{image_name}"), data).await?;
 
     Ok(())
 }
