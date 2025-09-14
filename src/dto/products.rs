@@ -1,5 +1,7 @@
+use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+use sqlx::prelude::FromRow;
 use validator::Validate;
 
 #[derive(Debug, Deserialize, Validate)]
@@ -19,3 +21,19 @@ pub struct CreateProduct {
 
     pub is_active: Option<bool>,
 } 
+
+#[derive(Debug, Serialize, FromRow)]
+pub struct ListProducts {
+    code: String,
+    name: String,
+    description: Option<String>,
+    price: Decimal,
+    is_active: bool,
+    image_name: String,
+    created_at: DateTime<Utc>,
+}
+
+#[derive(Deserialize)]
+pub struct ListProductFilter {
+    pub is_active: Option<bool>
+}

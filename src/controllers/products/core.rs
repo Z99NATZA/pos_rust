@@ -1,14 +1,14 @@
 use std::sync::Arc;
 
-use axum::{body::Bytes, extract::{Multipart, State}};
+use axum::{Json, body::Bytes, extract::{Multipart, Query, State}};
 use rust_decimal::Decimal;
 use uuid::Uuid;
 use validator::Validate;
 
-use crate::{app::{error::AppError, result::AppResult, state::AppState}, dto::products::CreateProduct, utils::{file::{ensure_valid_ext, validate_image_ext}, numeric::string_to_decimal_2}};
+use crate::{app::{error::AppError, result::AppResult, state::AppState}, dto::products::{CreateProduct, ListProductFilter, ListProducts}, utils::{file::{ensure_valid_ext, validate_image_ext}, numeric::string_to_decimal_2}};
 
 pub async fn create_product(
-    State(_state): State<Arc<AppState>>,
+    State(state): State<Arc<AppState>>,
     mut mp: Multipart
 ) -> AppResult<()> {
     let mut name = String::new();
@@ -59,9 +59,40 @@ pub async fn create_product(
 
     dto.validate()?;
 
-    println!("{dto:#?}");
+    let _query = sqlx::query(r#"
+            INSERT INTO products(name, code, price, description, is_active, image_name)
+            values($1, $2, $3, $4, $5, $6)
+        "#)
+        .bind(dto.name)
+        .bind(dto.code)
+        .bind(dto.price)
+        .bind(dto.description)
+        .bind(dto.is_active.unwrap_or(true))
+        .bind(dto.image_name)
+        .execute(&state.db)
+        .await?
+        ;
 
     tokio::fs::write(format!("images/products/{image_name}"), data).await?;
 
     Ok(())
+}
+
+pub async fn list_products(
+    State(state): State<Arc<AppState>>,
+    Query(filter): Query<ListProductFilter>
+) -> AppResult<Json<Vec<ListProducts>>> {
+    let query = sqlx::query_as::<_, ListProducts>(r#"
+            SELECT
+                name, code, description, price,
+                is_active, image_name, created_at
+            FROM products
+            WHERE ($1::boolean IS NULL OR is_active = $1)
+            ORDER BY created_at DESC
+        "#)
+        .bind(filter.is_active)
+        .fetch_all(&state.db)
+        .await?;
+
+    Ok(Json(query))
 }

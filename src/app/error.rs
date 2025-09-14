@@ -2,6 +2,7 @@
 
 use std::env;
 use axum::{Json, extract::multipart::MultipartError, http::StatusCode, response::IntoResponse};
+use sqlx::postgres::PgDatabaseError;
 use thiserror::Error;
 use tracing::error;
 use serde_json::json;
@@ -54,13 +55,29 @@ impl IntoResponse for AppError {
                     sqlx::Error::RowNotFound => (
                         StatusCode::NOT_FOUND,
                         "not_found",
-                        "Not found".to_string(),
+                        "ไม่พบข้อมูล".to_string(),
                     ),
                     sqlx::Error::Database(db_err) => {
-                        let pg_code = db_err.code().map(|c| c.to_string());
+                        if let Some("23505") = db_err.code().as_deref() {
+                            if let Some(pg) = db_err.try_downcast_ref::<PgDatabaseError>() {
+                                let field: Option<String> = pg
+                                    .detail()
+                                    .and_then(|d| d.split("Key (").nth(1))
+                                    .and_then(|s| s.split(')').next())
+                                    .and_then(|cols| cols.split(',').next())
+                                    .map(|s| s.trim().to_string())
+                                    .filter(|s| !s.is_empty());
 
-                        if pg_code.as_deref() == Some("23505") {
-                            (StatusCode::CONFLICT, "unique_violation", "Resource already exists".into())
+                                let msg = match field.as_deref() {
+                                    Some("name") => "ชื่อซ้ำ".to_string(),
+                                    Some("code") => "code ซ้ำ".to_string(),
+                                    _ => "เคยมีอยู่แล้ว".to_string(),
+                                };
+
+                                (StatusCode::CONFLICT, "unique_violation", msg)
+                            } else {
+                                (StatusCode::CONFLICT, "unique_violation", "เคยมีอยู่แล้ว".into())
+                            }
                         }
                         else {
                             (StatusCode::INTERNAL_SERVER_ERROR, "database_error", "Internal server error".into())
