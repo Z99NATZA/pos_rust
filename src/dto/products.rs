@@ -2,7 +2,6 @@ use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use sqlx::prelude::FromRow;
-use uuid::Uuid;
 use validator::Validate;
 
 #[derive(Debug, Deserialize, Validate)]
@@ -41,7 +40,7 @@ pub struct ListProductFilter {
 
 #[derive(Debug, FromRow, Serialize)]
 pub struct GetProduct {
-    pub id: Uuid,
+    pub code: String,
     pub name: String,
     pub description: Option<String>,
     pub price: Decimal,
