@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
-use axum::{Json, body::Bytes, extract::{Multipart, Query, State}};
+use axum::{Json, body::Bytes, extract::{Multipart, Path, Query, State}};
 use rust_decimal::Decimal;
 use uuid::Uuid;
 use validator::Validate;
 
-use crate::{app::{error::AppError, result::AppResult, state::AppState}, dto::products::{CreateProduct, ListProductFilter, ListProducts}, utils::{file::{ensure_valid_ext, validate_image_ext}, numeric::string_to_decimal_2}};
+use crate::{app::{error::AppError, result::AppResult, state::AppState}, dto::products::{CreateProduct, GetProduct, ListProductFilter, ListProducts}, utils::{file::{ensure_valid_ext, validate_image_ext}, numeric::string_to_decimal_2}};
 
 pub async fn create_product(
     State(state): State<Arc<AppState>>,
@@ -93,6 +93,24 @@ pub async fn list_products(
         .bind(filter.is_active)
         .fetch_all(&state.db)
         .await?;
+
+    Ok(Json(query))
+}
+
+pub async fn get_product_by_id(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<Uuid>
+) -> AppResult<Json<GetProduct>> {
+    let query = sqlx::query_as::<_, GetProduct>(r#"
+            SELECT
+                id, name, description, price, is_active
+            FROM products
+            WHERE id = $1
+        "#)
+        .bind(id)
+        .fetch_one(&state.db)
+        .await?
+        ;
 
     Ok(Json(query))
 }
