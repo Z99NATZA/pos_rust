@@ -16,9 +16,7 @@ pub struct CreateProduct {
     pub image_name: String,
 
     pub description: Option<String>,
-    
     pub price: Decimal,
-
     pub is_active: Option<bool>,
 } 
 
@@ -44,5 +42,17 @@ pub struct GetProduct {
     pub name: String,
     pub description: Option<String>,
     pub price: Decimal,
-    pub is_active: bool
+    pub is_active: bool,
+    pub image_name: String,
 }
+
+#[derive(Debug, Deserialize, Validate)]
+pub struct UpdateProduct {
+    #[validate(length(min = 2, max = 50, message = "ชื่อ สั้นเกินไป 2-50"))]
+    pub name: String,
+
+    pub description: Option<String>,
+    pub price: Decimal,
+    pub is_active: bool,
+    pub image_name: String,
+} 

@@ -5,7 +5,7 @@ use rust_decimal::Decimal;
 use uuid::Uuid;
 use validator::Validate;
 
-use crate::{app::{error::AppError, result::AppResult, state::AppState}, dto::products::{CreateProduct, GetProduct, ListProductFilter, ListProducts}, utils::{file::{ensure_valid_ext, validate_image_ext}, numeric::string_to_decimal_2}};
+use crate::{app::{error::AppError, result::AppResult, state::AppState}, dto::products::{CreateProduct, GetProduct, ListProductFilter, ListProducts, UpdateProduct}, utils::{file::{ensure_valid_ext, validate_image_ext}, numeric::string_to_decimal_2}};
 
 pub async fn list_products(
     State(state): State<Arc<AppState>>,
@@ -57,7 +57,7 @@ pub async fn create_product(
                     .ok_or_else(|| AppError::BadRequestCustom("เพิ่มภาพสินค้า".into()))?;
 
                 let ext = ensure_valid_ext(filename)?;
-                let _ = validate_image_ext(ext.as_str())?;
+                validate_image_ext(ext.as_str())?;
 
                 image_name = format!("product-{}.{}", Uuid::new_v4(), ext);
 
@@ -103,7 +103,7 @@ pub async fn get_product_by_code(
 ) -> AppResult<Json<GetProduct>> {
     let query = sqlx::query_as::<_, GetProduct>(r#"
             SELECT
-                code, name, description, price, is_active
+                code, name, description, price, is_active, image_name
             FROM products
             WHERE code = $1
         "#)
@@ -113,4 +113,78 @@ pub async fn get_product_by_code(
         ;
 
     Ok(Json(query))
+}
+
+pub async fn update_product(
+    State(state): State<Arc<AppState>>,
+    Path(code): Path<String>,
+    mut mp: Multipart
+) -> AppResult<()> {
+    let mut name = String::new();
+    let mut description: Option<String> = None;
+    let mut price = Decimal::ZERO;
+    let mut is_active = true;
+    let mut image_name_ole = String::new();
+    let mut image_name: Option<String> = None;
+    let mut data: Option<Bytes> = None;
+
+    while let Some(field) = mp.next_field().await? {
+        match field.name() {
+            Some("name") => name = field.text().await?,
+            Some("description") => description = Some(field.text().await?),
+            Some("price") => {
+                let s = field.text().await?;
+                price = string_to_decimal_2(s);
+            },
+            Some("is_active") => {
+                let s = field.text().await?;
+                is_active = s.parse::<bool>().unwrap_or(true);
+            },
+            Some("image_name_old") => image_name_ole = field.text().await?,
+            Some("image_file") => {
+                if let Some(filename) = field.file_name() {
+                    let ext = ensure_valid_ext(filename)?;
+                    validate_image_ext(&ext)?;
+
+                    image_name = Some(format!("product-{}.{}", Uuid::new_v4(), ext));
+
+                    data = Some(field.bytes().await?);
+                }
+            }
+            _ => {}
+        }
+    }
+
+    let final_image_name = image_name.unwrap_or(image_name_ole);
+
+    let dto = UpdateProduct {
+        name: name,
+        description: description,
+        price: price,
+        is_active: is_active,
+        image_name: final_image_name
+    };
+
+    dto.validate()?;
+
+    sqlx::query(r#"
+            UPDATE products SET
+                name = $2,
+                description = $3,
+                price = $4,
+                is_active = $5,
+                image_name = $6
+            WHERE code = $1
+        "#)
+        .bind(code)
+        .bind(dto.name)
+        .bind(dto.description)
+        .bind(dto.price)
+        .bind(dto.is_active)
+        .bind(dto.image_name)
+        .execute(&state.db)
+        .await?
+        ;
+
+    Ok(())
 }
