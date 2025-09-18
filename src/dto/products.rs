@@ -54,5 +54,7 @@ pub struct UpdateProduct {
     pub description: Option<String>,
     pub price: Decimal,
     pub is_active: bool,
+
+    #[validate(length(min = 1, message = "เพิ่มภาพ"))]
     pub image_name: String,
 } 
