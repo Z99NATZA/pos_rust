@@ -206,3 +206,14 @@ pub async fn update_product(
     Ok(StatusCode::NO_CONTENT)
 }
 
+pub async fn delete_product(
+    State(state): State<Arc<AppState>>,
+    Path(code): Path<String>
+) -> AppResult<StatusCode> {
+    sqlx::query("DELETE FROM products WHERE code = $1")
+        .bind(code)
+        .execute(&state.db)
+        .await?;
+
+    Ok(StatusCode::NO_CONTENT)
+}
