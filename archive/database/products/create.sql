@@ -1,6 +1,6 @@
 CREATE TABLE products (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    code CITEXT UNIQUE NOT NULL,
+    code VARCHAR(50) UNIQUE NOT NULL, 
     name VARCHAR(50) NOT NULL,
     description TEXT DEFAULT '',
     price NUMERIC(18, 2) NOT NULL DEFAULT 0.00,
@@ -11,12 +11,8 @@ CREATE TABLE products (
     CONSTRAINT products_price_nonneg CHECK (price >= 0) -- price: ป้องกันค่าติดลบ
 )
 
--- เวลาค้นหา name จะเร็วขึ้น
--- where name ILIKE '%น้ำผลไม้%'
 CREATE INDEX IF NOT EXISTS idx_products_name_trgm
     ON products USING GIN (name gin_trgm_ops);
 
--- เวลาค้นหา code จะเร็วขึ้น
--- where code ILIKE '%น้ำผลไม้%'
 CREATE INDEX IF NOT EXISTS idx_products_code_trgm
     ON products USING GIN (code gin_trgm_ops);
