@@ -39,6 +39,9 @@ pub enum AppError {
 
     #[error("Bad request")]
     BadRequestCustom(String),
+
+    #[error("Serde json error: {0}")]
+    SerdeJsonError(#[from] serde_json::Error),
 }
 
 impl IntoResponse for AppError {
@@ -95,6 +98,7 @@ impl IntoResponse for AppError {
             | AppError::DotEnvError(_)
             | AppError::EnvVarError(_) 
             | AppError::Argon2Error(_) 
+            | AppError::SerdeJsonError(_) 
             => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "internal_server_error",

@@ -7,7 +7,7 @@ CREATE TABLE orders (
     payment_method payment_method NOT NULL DEFAULT 'CASH',
     paid_amount NUMERIC(18, 2) NOT NULL DEFAULT 0.00,
     change_amount NUMERIC(18, 2) NOT NULL DEFAULT 0.00,
-    users_code VARCHAR(50) NOT NULL,
+    user_id UUID NOT NULL REFERENCES users(id),
     
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
