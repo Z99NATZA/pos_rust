@@ -5,8 +5,6 @@ use tokio::signal;
 use crate::{app::{result::AppResult, state::AppState}, config::db::connect, routers};
 
 pub async fn run() -> AppResult<()> {
-
-
     let db_url = env::var("DATABASE_URL")?;
     let db = connect(&db_url).await?;
 

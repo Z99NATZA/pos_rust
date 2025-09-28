@@ -42,6 +42,15 @@ pub enum AppError {
 
     #[error("Serde json error: {0}")]
     SerdeJsonError(#[from] serde_json::Error),
+
+    #[error("Unauthorized")]
+    Unauthorized,
+
+    #[error("Unauthorized; {0}")]
+    UnauthorizedCustom(String),
+
+    #[error(transparent)]
+    JsonwebtokenError(#[from] jsonwebtoken::errors::Error),
 }
 
 impl IntoResponse for AppError {
@@ -145,6 +154,24 @@ impl IntoResponse for AppError {
                 StatusCode::BAD_REQUEST,
                 "bad_request",
                 e.to_string(),
+            ),
+
+            AppError::Unauthorized => (
+                StatusCode::UNAUTHORIZED, 
+                "unauthorized", 
+                "Unauthorized".into()
+            ),
+
+            AppError::UnauthorizedCustom(e) => (
+                StatusCode::UNAUTHORIZED,
+                "unauthorized",
+                e.to_string(),
+            ),
+
+            AppError::JsonwebtokenError(_) => (
+                StatusCode::UNAUTHORIZED, 
+                "invalid_token", 
+                "Invalid or expired token".into()
             ),
         };
 

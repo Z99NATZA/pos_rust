@@ -11,15 +11,15 @@ pub struct ListUsers {
 
 #[derive(Debug, Deserialize, Validate)]
 pub struct CreateUser {
-    #[validate(length(min = 3, message = "username too short"))]
+    #[validate(length(min = 3, message = "ชื่อ สั้นเกินไป แนะนำ 3"))]
     pub username: String,
 
-    #[validate(email(message = "invalid email"))]
+    #[validate(email(message = "อีเมล ไม่ถูกต้อง"))]
     pub email: String,
 
-    #[validate(length(min = 8, message = "password too short"))]
+    #[validate(length(min = 8, message = "รหัสผ่านสั้นเกินไป แนะนำ 8"))]
     pub password: String,
     
     pub role: Option<String>,
     pub is_active: Option<bool>
-}
+} 
