@@ -8,6 +8,7 @@ mod dto;
 mod config;
 mod bootstrap;
 mod utils;
+mod middleware;
 
 #[tokio::main]
 async fn main() -> AppResult<()> {

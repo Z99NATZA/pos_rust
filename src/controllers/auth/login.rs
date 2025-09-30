@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{env, sync::Arc};
 
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
 use axum::{Json, extract::State, http::StatusCode, response::{IntoResponse, Response}};
@@ -40,8 +40,13 @@ pub async fn login(
         return Err(AppError::UnauthorizedCustom("ไม่มีสิทธิ์ใช้งาน".into()));
     }
 
+    let min = env::var("ACCESS_TOKEN_TTL_MIN")
+        .ok()
+        .and_then(|s| s.parse::<i64>().ok())
+        .unwrap_or(15);
+
     let now = Utc::now();
-    let exp = now + Duration::minutes(15);
+    let exp = now + Duration::minutes(min);
 
     let claims = Claims {
         sub: row.id,
@@ -49,12 +54,15 @@ pub async fn login(
         username: row.username,
         role: row.role,
         exp: exp.timestamp() as usize,
+        iat: now.timestamp() as usize,
     };
+
+    let jwt_secret = env::var("JWT_SECRET")?;
 
     let token = encode(
         &Header::default(), 
         &claims, 
-        &EncodingKey::from_secret("secret".as_ref())
+        &EncodingKey::from_secret(jwt_secret.as_ref())
     )?;
     
     let res = LoginResponse { 
@@ -65,3 +73,5 @@ pub async fn login(
 
     Ok((StatusCode::OK, Json(res)).into_response())
 }
+
+

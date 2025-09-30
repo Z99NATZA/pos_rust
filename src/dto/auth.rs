@@ -15,6 +15,7 @@ pub struct Claims {
     pub username: String,
     pub role: String,
     pub exp: usize,
+    pub iat: usize,
 } 
 
 #[derive(Debug, Serialize)]
