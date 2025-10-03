@@ -2,13 +2,16 @@ use std::{env, sync::Arc};
 
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
 use axum::{Json, extract::State, http::StatusCode, response::{IntoResponse, Response}};
+use axum_extra::extract::CookieJar;
 use chrono::{Duration, Utc};
 use jsonwebtoken::{EncodingKey, Header, encode};
+use cookie::{Cookie, SameSite, time::Duration as CookieDuration};
 
-use crate::{app::{error::AppError, result::AppResult, state::AppState}, dto::auth::{Claims, LoginRequest, LoginResponse}};
+use crate::{app::{error::AppError, result::AppResult, state::AppState}, dto::{auth::{Claims, LoginRequest}, base::BaseApiResponse}};
 
 pub async fn login(
     State(state): State<Arc<AppState>>,
+    jar: CookieJar,
     Json(payload): Json<LoginRequest>
 ) -> AppResult<Response> {
     let notfound = "อีเมล หรือ รหัสผ่าน ไม่ถูกต้อง";
@@ -64,14 +67,29 @@ pub async fn login(
         &claims, 
         &EncodingKey::from_secret(jwt_secret.as_ref())
     )?;
+
+    let cookie_domain = env::var("COOKIE_DOMAIN").unwrap_or_default();
+    let mut cookie_builder = Cookie::build(("access_token", token.clone()))
+        .path("/")                       // ส่งได้ทั้งไซต์
+        .http_only(true)                 // JS อ่านไม่ได้
+        .same_site(SameSite::None)       // รองรับ cross-site
+        .secure(true)                    // ใช้ HTTPS เท่านั้น
+        .max_age(CookieDuration::seconds((exp - now).num_seconds()));
+
+    if !cookie_domain.is_empty() {
+        cookie_builder = cookie_builder.domain(cookie_domain);
+    }
+
+    let auth_cookie = cookie_builder.build();
+
+    let jar = jar.add(auth_cookie);
     
-    let res = LoginResponse { 
-        access_token: token.clone(), 
-        token_type: "Bearer".into(), 
-        expires_in: (exp - now).num_seconds() 
+    let res = BaseApiResponse {
+        success: true,
+        message: Some("login success".into()),
     };
 
-    Ok((StatusCode::OK, Json(res)).into_response())
+    Ok((jar, (StatusCode::OK, Json(res))).into_response())
 }
 
 

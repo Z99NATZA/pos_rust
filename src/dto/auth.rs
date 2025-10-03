@@ -8,7 +8,7 @@ pub struct LoginRequest {
 }
 
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Claims {
     pub sub: Uuid,
     pub email: String,
@@ -17,10 +17,3 @@ pub struct Claims {
     pub exp: usize,
     pub iat: usize,
 } 
-
-#[derive(Debug, Serialize)]
-pub struct LoginResponse {
-    pub access_token: String,
-    pub token_type: String, // "Bearer"
-    pub expires_in: i64, // วินาที
-}
